@@ -7,8 +7,9 @@ Kaggle: https://www.kaggle.com/datasets/praneshmukhopadhyay/youtubers-saying-thi
 
 Github: https://github.com/Mukhopadhyay/YouTubers-saying-things
 
+
 ## Description
-This dataset contains subtitles from over `91` different YouTubers, ranging from all different kinds of categories. The data were collected and cleaned (as much as necessary) by me. Currently, the dataset contains `2515` unique videos and their subtitles. There are `11` columns in the dataset. The purpose of each column is as follows:
+This dataset contains subtitles from over `91` different YouTubers, ranging from all different kinds of categories. The data were collected and cleaned (as much as necessary) by PRANESH MUKHOPADHYAY. The `Transcript` column in the dataset contains the subtitles for the respective videos. However, the reliability of the subtitles may vary. Even though the auto-generated subtitles work great (most of the time). Sometimes under heavy pressure of thick accents, it lets go of the ball. Please consult the `CC` attribute to check whether the subtitle is auto-generated or not. `1381` of these video subtitles are auto-generated, the rest of the `1134` are manual ones. Currently, the dataset contains `2515` unique videos and their subtitles. There are `11` columns in the dataset. The purpose of each column is as follows:
 
 |**No**|**Column**|**Dtype**|**Description**|
 |:-----|:---------|:--------|:--------------|
