@@ -38,6 +38,3 @@ This dataset contains subtitles from over `91` different YouTubers, ranging from
 |`Tech`|**Austin Evans**, **Coder Coder**, **Fireship**, **Hardware Canucks**, **Joma Tech**, **Linus Tech Tips**, **Marques Brownlee**, **TechLinked**, **Techquickie**, **Web Dev Simplified**|10|
 
 
-
-=======
->>>>>>> 9e6501234decf12f65d90ba73ab5b1e0553f3c86
