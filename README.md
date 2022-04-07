@@ -1,5 +1,10 @@
-# 632_Project
+# 632_Project Description
 
+data from: "YouTubers saying things" by PRANESH MUKHOPADHYAY 
+Kaggle:  https://www.kaggle.com/datasets/praneshmukhopadhyay/youtubers-saying-things
+Github:  https://github.com/Mukhopadhyay/YouTubers-saying-things
+
+<<<<<<< HEAD
 ## Data Sets
 data from: "YouTubers saying things" by PRANESH MUKHOPADHYAY 
 Kaggle: https://www.kaggle.com/datasets/praneshmukhopadhyay/youtubers-saying-things 
@@ -39,3 +44,5 @@ This dataset contains subtitles from over `91` different YouTubers, ranging from
 
 
 
+=======
+>>>>>>> 9e6501234decf12f65d90ba73ab5b1e0553f3c86
