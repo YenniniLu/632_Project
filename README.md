@@ -40,4 +40,20 @@ This dataset contains subtitles from over `91` different YouTubers, ranging from
 |`News`|**A&E**, **BBC News**, **Insider News**, **NBC News**, **NowThis News**, **Sky News**, **SomeGoodNews**, **TechLinked**, **The Daily Show with Trevor Noah**, **VICE**|10|
 |`Tech`|**Austin Evans**, **Coder Coder**, **Fireship**, **Hardware Canucks**, **Joma Tech**, **Linus Tech Tips**, **Marques Brownlee**, **TechLinked**, **Techquickie**, **Web Dev Simplified**|10|
 
+## Reserach Goal
+
+Find the best model to predict the number of views using Subscribers, CC, Released, Category, Sentiment and Length.
+
+## Tasks
+
+1. Data Cleaning and manipulation. -> Daiyan
+2. Sentiment Analysis -> Xinyi
+3. Regression Model -> Xinyi
+4. Random Forest -> Daiyan
+5. Compare models and make conclusion -> Daiyan & Xinyi
+
+
+
+
+
 
