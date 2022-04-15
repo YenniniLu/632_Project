@@ -1,0 +1,110 @@
+---
+title: "test"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+## R Markdown
+
+```{r eval=FALSE}
+# After cleaning:
+# Released is in month ago
+# Subscribers is in K
+# Views is in K
+# Length is in minute
+
+df_raw <- read.csv("data.csv")
+
+cleanViews <- function(str) {
+  str <- str_remove(str, " views")
+  last <- str_sub(str, -1)
+  views <- str %>% str_remove(last) %>% as.numeric()
+  if (last == "M") return(1000*views)
+  else return(views)
+}
+
+cleanViewsCol <-  function(col) {
+  ret <- c()
+  for(r in col) {
+    ret <- append(ret, cleanViews(r))
+  }
+
+  return(ret)
+}
+
+cleanSubscribers <- function(str) {
+  str <- str_remove(str, " subscribers")
+  last <- str_sub(str, -1)
+  views <- str %>% str_remove(last) %>% as.numeric()
+  if (last == "M") return(1000*views)
+  else return(views)
+}
+
+cleanSubscribersCol <-  function(col) {
+  ret <- c()
+  for(r in col) {
+    ret <- append(ret, cleanSubscribers(r))
+  }
+  return(ret)
+}
+
+cleanLength <- function(str) {
+  list <- str_split(str, ":")
+  len <- length(list[[1]])
+  if (len == 3) {
+     h <- as.numeric(list[[1]][1])
+     m <- as.numeric(list[[1]][2])
+     return((m + 1) + 60*m)
+  } else {
+     m <- as.numeric(list[[1]][1])
+     return(m+1)
+  }
+}
+
+cleanLengthCol <-  function(col) {
+  ret <- c()
+  for(r in col) {
+    ret <- append(ret, cleanLength(r))
+  }
+  return(ret)
+}
+
+cleanReleased <- function(str) {
+  str <- str_remove(str, "Streamed ")
+  list <- str_split(str, " ")
+  if (list[[1]][2] == "years") return(as.numeric(list[[1]][1])*12)
+  else return(as.numeric(list[[1]][1]))
+}
+
+cleanReleasedCol <- function(col) {
+  ret <- c()
+  for(r in col) {
+    ret <- append(ret, cleanReleased(r))
+  }
+  return(ret)
+}
+
+df <- df_raw %>%  
+  filter(
+    !is.na(Released) & Released != ""
+  ) 
+
+df$Released = df$Released %>% cleanReleasedCol()
+df$Subscribers = df$Subscribers %>% cleanSubscribersCol()
+df$Views = df$Views %>% cleanViewsCol()
+df$Length = df$Length %>% cleanLengthCol()
+
+head(df)
+
+write.csv(df, "cleaned_data.csv")
+```
+
+
