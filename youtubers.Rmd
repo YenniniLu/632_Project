@@ -4,10 +4,10 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
 ```
 
-```{r}
+```{r message=FALSE}
 library(tidyverse)
 library(stringr)
 ```
@@ -15,17 +15,21 @@ library(stringr)
 
 ## Inspect the data
 
-Load thed data:
+Load the data:
 ```{r}
 df_raw <- read.csv("data.csv")
 head(df_raw)
 ```
 
-We notice several problems, like:
-1. Views: The Views variable is in string format and the units are different, like "10K views", "10M views". We prefer it to be in number and in the same unit in order to conduct statistical analysis.   
-2. Subscribers: The same problems as Views. The Subscribers variable is like "10K subscribers", "10M subscribers".
-3. Length: The video length is in string format, like "12:00", "1:12:00". We need it to be in number and in the same unit.
-4. Released: The Released variable is in string format, like "2 years age", "10 month ago". We need it to be in number and in the same unit.
+We notice several problems, like:     
+
+1. Views: The Views variable is in string format and the units are different, like "10K views", "10M views". We prefer it to be in number and in the same unit in order to conduct statistical analysis.       
+
+2. Subscribers: The same problems as Views. The Subscribers variable is like "10K subscribers", "10M subscribers".       
+
+3. Length: The video length is in string format, like "12:00", "1:12:00". We need it to be in number and in the same unit.       
+
+4. Released: The Released variable is in string format, like "2 years age", "10 month ago". We need it to be in number and in the same unit.        
 
 Therefore, we need to do data cleaning first.
 
