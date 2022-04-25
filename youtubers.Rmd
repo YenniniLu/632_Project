@@ -1,5 +1,5 @@
 ---
-title: "test"
+title: "Xinyi & Daiyan 632 Project"
 output: pdf_document
 ---
 
@@ -12,17 +12,27 @@ library(tidyverse)
 library(stringr)
 ```
 
-## R Markdown
+
+## Inspect the data
+
+Load thed data:
+```{r}
+df_raw <- read.csv("data.csv")
+head(df_raw)
+```
+
+We notice several problems, like:
+1. Views: The Views variable is in string format and the units are different, like "10K views", "10M views". We prefer it to be in number and in the same unit in order to conduct statistical analysis.   
+2. Subscribers: The same problems as Views. The Subscribers variable is like "10K subscribers", "10M subscribers".
+3. Length: The video length is in string format, like "12:00", "1:12:00". We need it to be in number and in the same unit.
+4. Released: The Released variable is in string format, like "2 years age", "10 month ago". We need it to be in number and in the same unit.
+
+Therefore, we need to do data cleaning first.
+
+## Data Cleaning
 
 ```{r eval=FALSE}
-# After cleaning:
-# Released is in month ago
-# Subscribers is in K
-# Views is in K
-# Length is in minute
-
-df_raw <- read.csv("data.csv")
-
+# Unify units and convert string to number, like: 10K views -> 10, 10M views -> 10000
 cleanViews <- function(str) {
   str <- str_remove(str, " views")
   last <- str_sub(str, -1)
@@ -40,6 +50,7 @@ cleanViewsCol <-  function(col) {
   return(ret)
 }
 
+# Unify units and convert string to number, like: 10K subscribers -> 10, 10M subscribers -> 10000
 cleanSubscribers <- function(str) {
   str <- str_remove(str, " subscribers")
   last <- str_sub(str, -1)
@@ -56,6 +67,7 @@ cleanSubscribersCol <-  function(col) {
   return(ret)
 }
 
+# Convert time in string format to number of minutes, like: 12:00 -> 12, 1:12:00 -> 72
 cleanLength <- function(str) {
   list <- str_split(str, ":")
   len <- length(list[[1]])
@@ -77,6 +89,7 @@ cleanLengthCol <-  function(col) {
   return(ret)
 }
 
+# Convert time to number of months ago, like: 1 years ago -> 12, 10 months ago to 10
 cleanReleased <- function(str) {
   str <- str_remove(str, "Streamed ")
   list <- str_split(str, " ")
@@ -92,11 +105,13 @@ cleanReleasedCol <- function(col) {
   return(ret)
 }
 
+# Remove NAs
 df <- df_raw %>%  
   filter(
     !is.na(Released) & Released != ""
   ) 
 
+# Clean the data
 df$Released = df$Released %>% cleanReleasedCol()
 df$Subscribers = df$Subscribers %>% cleanSubscribersCol()
 df$Views = df$Views %>% cleanViewsCol()
@@ -104,7 +119,14 @@ df$Length = df$Length %>% cleanLengthCol()
 
 head(df)
 
+# Save for future use
 write.csv(df, "cleaned_data.csv")
 ```
 
+Check the cleaned data:
+```{r}
+df <- read.csv("cleaned_data.csv")
+head(df)
+```
+After cleaning, Views, Subscribers, Released and Length are numbers, while Views, Subscribers are in K and Released and Length are in minute.
 
