@@ -130,3 +130,22 @@ head(df)
 ```
 After cleaning, Views, Subscribers, Released and Length are numbers, while Views, Subscribers are in K and Released and Length are in minute.
 
+## Sentiment Analysis
+
+TODO by Xinyi
+
+## Linear Regression
+
+TODO by Xinyi
+
+## Random Forest
+
+TODO by Daiyan
+
+## Conclusion
+
+TODO
+
+
+
+
