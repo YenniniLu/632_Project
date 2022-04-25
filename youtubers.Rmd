@@ -45,15 +45,6 @@ cleanViews <- function(str) {
   else return(views)
 }
 
-cleanViewsCol <-  function(col) {
-  ret <- c()
-  for(r in col) {
-    ret <- append(ret, cleanViews(r))
-  }
-
-  return(ret)
-}
-
 # Unify units and convert string to number, like: 10K subscribers -> 10, 10M subscribers -> 10000
 cleanSubscribers <- function(str) {
   str <- str_remove(str, " subscribers")
@@ -61,14 +52,6 @@ cleanSubscribers <- function(str) {
   views <- str %>% str_remove(last) %>% as.numeric()
   if (last == "M") return(1000*views)
   else return(views)
-}
-
-cleanSubscribersCol <-  function(col) {
-  ret <- c()
-  for(r in col) {
-    ret <- append(ret, cleanSubscribers(r))
-  }
-  return(ret)
 }
 
 # Convert time in string format to number of minutes, like: 12:00 -> 12, 1:12:00 -> 72
@@ -85,28 +68,12 @@ cleanLength <- function(str) {
   }
 }
 
-cleanLengthCol <-  function(col) {
-  ret <- c()
-  for(r in col) {
-    ret <- append(ret, cleanLength(r))
-  }
-  return(ret)
-}
-
 # Convert time to number of months ago, like: 1 years ago -> 12, 10 months ago to 10
 cleanReleased <- function(str) {
   str <- str_remove(str, "Streamed ")
   list <- str_split(str, " ")
   if (list[[1]][2] == "years") return(as.numeric(list[[1]][1])*12)
   else return(as.numeric(list[[1]][1]))
-}
-
-cleanReleasedCol <- function(col) {
-  ret <- c()
-  for(r in col) {
-    ret <- append(ret, cleanReleased(r))
-  }
-  return(ret)
 }
 
 # Remove NAs
@@ -116,20 +83,22 @@ df <- df_raw %>%
   ) 
 
 # Clean the data
-df$Released = df$Released %>% cleanReleasedCol()
-df$Subscribers = df$Subscribers %>% cleanSubscribersCol()
-df$Views = df$Views %>% cleanViewsCol()
-df$Length = df$Length %>% cleanLengthCol()
+df <- df %>% mutate(
+  Views = map_dbl(Views, cleanViews),
+  Subscribers = map_dbl(Subscribers, cleanSubscribers),
+  Length = map_dbl(Length, cleanLength),
+  Released = map_dbl(Released, cleanReleased)
+)
 
 head(df)
 
 # Save for future use
-write.csv(df, "cleaned_data.csv")
+write_csv(df, "cleaned_data.csv")
 ```
 
 Check the cleaned data:
 ```{r}
-df <- read.csv("cleaned_data.csv")
+df <- read_csv("cleaned_data.csv")
 head(df)
 ```
 After cleaning, Views, Subscribers, Released and Length are numbers, while Views, Subscribers are in K and Released and Length are in minute.
