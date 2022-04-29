@@ -10,12 +10,13 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
 ```{r message=FALSE}
 library(tidyverse)
 library(stringr)
+library(randomForest) 
+library(vip) 
 ```
 
+## Data Cleaning
 
-## Inspect the data
-
-Load the data:
+Load the data and inspect:
 ```{r}
 df_raw <- read.csv("data.csv")
 head(df_raw)
@@ -32,8 +33,6 @@ We notice several problems, like:
 4. Released: The Released variable is in string format, like "2 years age", "10 month ago". We need it to be in number and in the same unit.        
 
 Therefore, we need to do data cleaning first.
-
-## Data Cleaning
 
 ```{r eval=FALSE}
 # Unify units and convert string to number, like: 10K views -> 10, 10M views -> 10000
@@ -95,13 +94,25 @@ head(df)
 # Save for future use
 write_csv(df, "cleaned_data.csv")
 ```
+After cleaning, Views, Subscribers, Released and Length are numbers, while Views, Subscribers are in K and Released and Length are in minute.
 
-Check the cleaned data:
+## Data Discovery
+
 ```{r}
 df <- read_csv("cleaned_data.csv")
 head(df)
+
+table(df$CC)
+boxplot(Views ~ CC, data = df)
+
+summary(df$Length)
+boxplot(df$Length)
+
+summary(df$Released)
+boxplot(df$Released)
+
+pairs(Views ~ CC + Released + Length, data=df)
 ```
-After cleaning, Views, Subscribers, Released and Length are numbers, while Views, Subscribers are in K and Released and Length are in minute.
 
 ## Sentiment Analysis
 
@@ -113,7 +124,32 @@ TODO by Xinyi
 
 ## Random Forest
 
-TODO by Daiyan
+```{r}
+set.seed(652)
+rf1 <- randomForest(Views ~ CC + Released + Category + Length, importance = TRUE, data = df)
+rf1
+```
+
+Use the `vip()` function to make a variable importance plot.  Which variables are most important? 
+
+```{r}
+vip(rf1, num_features = 14,  include_type = TRUE)
+```
+
+Make a plot of the predicted versus actual values using the out-of-bag data.  Add the 1-1 line to the plot.
+
+```{r}
+pred_df <- data.frame(
+  Actual = df$Views,
+  Predicted = predict(rf1) # makes predictions using OOB data
+)
+```
+
+```{r}
+ggplot(pred_df, aes(x = Predicted, y = Actual)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red")
+```
 
 ## Conclusion
 
