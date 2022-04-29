@@ -1,6 +1,8 @@
 ---
 title: "Xinyi & Daiyan 632 Project"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -12,6 +14,9 @@ library(tidyverse)
 library(stringr)
 library(randomForest) 
 library(vip) 
+library(rpart)
+library(rpart.plot)
+library(caret)
 ```
 
 ## Data Cleaning
@@ -111,22 +116,66 @@ boxplot(df$Length)
 summary(df$Released)
 boxplot(df$Released)
 
-pairs(Views ~ CC + Released + Length, data=df)
+summary(df$Subscribers)
+boxplot(df$Subscribers)
+
+pairs(Views ~ CC + Released + Length + Subscribers, data=df)
 ```
 
 ## Sentiment Analysis
 
 TODO by Xinyi
 
+## Preparation for Cross-Validation
+
+Randomly split the data set in a 70% training and 30% test set. Make sure to use set.seed() so that your results are reproducible
+ 
+```{r}
+set.seed(652)
+n <- nrow(df)
+train_index <- sample(1:n, round(0.7*n))
+df_train <- df[train_index,]
+df_test <- df[-train_index,]
+```
+
 ## Linear Regression
 
 TODO by Xinyi
 
+## Regression Tree
+
+### Fit a regression tree on the training set.
+
+```{r}
+# Fit tree model
+t1 <- rpart(Views ~ CC + Released + Category + Length + Subscribers,
+            data = df_train,
+            method = "anova")
+
+# Plot the desicion tree
+rpart.plot(t1)
+
+# Plot R-square vs Splits and the Relative Error vs Splits.
+rsq.rpart(t1)
+```
+
+### Make predictions on the test set and compute the RMSE
+
+```{r}
+# Make prediction
+pred_tree <- predict(t1, newdata = df_test)
+
+# Compute the RMSE
+RMSE(df_test$Views, pred_tree)
+```
+
 ## Random Forest
+
+### Fit a Random Forest on the training set usinng the defaults for mtry and ntree.
 
 ```{r}
 set.seed(652)
-rf1 <- randomForest(Views ~ CC + Released + Category + Length, importance = TRUE, data = df)
+rf1 <- randomForest(Views ~ CC + Released + Category + Length + Subscribers, importance = TRUE, data = df_train)
 rf1
 ```
 
@@ -136,25 +185,28 @@ Use the `vip()` function to make a variable importance plot.  Which variables ar
 vip(rf1, num_features = 14,  include_type = TRUE)
 ```
 
-Make a plot of the predicted versus actual values using the out-of-bag data.  Add the 1-1 line to the plot.
+### Make predictions on the test set and compute the RMSE
 
 ```{r}
-pred_df <- data.frame(
-  Actual = df$Views,
-  Predicted = predict(rf1) # makes predictions using OOB data
-)
+# Make prediction
+pred_rf <- predict(rf1, newdata = df_test)
+
+# Compute the RMSE
+RMSE(df_test$Views, pred_rf)
 ```
 
-```{r}
-ggplot(pred_df, aes(x = Predicted, y = Actual)) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, color = "red")
-```
 
-## Conclusion
+## Conclusion(TODO)
 
-TODO
+Model | RMSE | R Squared | Number of Coefficients | performance | interpretability
+---- | ---- | ---- | ---- | ---- | ----
+linear regression | - | - | - | - | -
+regression tree | - | - | - | - | -
+random forest | - | - | - | - | -
 
+### Regression Tree VS Random Forest 
+
+Aggregated/ensemble models are not universally better than their "single" counterparts, they are better if and only if the single models suffer of instability. With XX training rows and only XX columns, we are in a comfortable training sample size situation in which even a decision tree may get reasonably stable.
 
 
 
