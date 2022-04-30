@@ -1,8 +1,9 @@
 ---
-title: "Xinyi & Daiyan 632 Project"
+title: "632 Project"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -19,15 +20,22 @@ library(rpart.plot)
 library(caret)
 ```
 
-## Data Cleaning
+## Research Data
 
-Load the data and inspect:
+The dataset contains **2515 unique videos** and their **subtitles** from over **91 different YouTubers**, ranging from all different kinds of categories. 
+
 ```{r}
 df_raw <- read.csv("data.csv")
 head(df_raw)
 ```
 
-We notice several problems, like:     
+## Research Goal
+
+Do a sentiment analysis on the subtitles and find the best model to predict the number of views using Subscribers, CC, Released, Category, Sentiment and Length.
+
+## Data Cleaning
+
+We notice several problems in the data, like:     
 
 1. Views: The Views variable is in string format and the units are different, like "10K views", "10M views". We prefer it to be in number and in the same unit in order to conduct statistical analysis.       
 
@@ -105,6 +113,10 @@ After cleaning, Views, Subscribers, Released and Length are numbers, while Views
 
 ```{r}
 df <- read_csv("cleaned_data.csv")
+df$CC <- as.factor(df$CC)
+df$Category <- as.factor(df$Category)
+df$Subscribers <- as.numeric(df$Subscribers)
+
 head(df)
 
 table(df$CC)
@@ -194,7 +206,6 @@ pred_rf <- predict(rf1, newdata = df_test)
 # Compute the RMSE
 RMSE(df_test$Views, pred_rf)
 ```
-
 
 ## Conclusion(TODO)
 
