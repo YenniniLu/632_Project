@@ -139,12 +139,10 @@ head(df)
 table(df$CC)
 boxplot(log(Views) ~ CC, data = df)
 
-```{r}
 summary(df$Length)
 summary(df$Released)
 summary(df$Subscribers)
 
-```{r}
 pairs(Views ~ CC + Released + Length + Subscribers + Category, data=df)
 ```
 
