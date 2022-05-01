@@ -18,6 +18,7 @@ library(vip)
 library(rpart)
 library(rpart.plot)
 library(caret)
+library(tidytext)
 ```
 
 ## Research Data
@@ -31,7 +32,7 @@ head(df_raw)
 
 ## Research Goal
 
-Do a sentiment analysis on the subtitles and find the best model to predict the number of views using Subscribers, CC, Released, Category, Sentiment and Length.
+Do a sentiment analysis on the subtitles and find the best multiple linear regression model to predict the number of views using Subscribers, CC, Released, Category, Sentiment and Length.
 
 ## Data Cleaning
 
@@ -118,25 +119,81 @@ df$Category <- as.factor(df$Category)
 df$Subscribers <- as.numeric(df$Subscribers)
 
 head(df)
-
-table(df$CC)
-boxplot(Views ~ CC, data = df)
-
-summary(df$Length)
-boxplot(df$Length)
-
-summary(df$Released)
-boxplot(df$Released)
-
-summary(df$Subscribers)
-boxplot(df$Subscribers)
-
-pairs(Views ~ CC + Released + Length + Subscribers, data=df)
 ```
 
-## Sentiment Analysis
+```{r}
+table(df$CC)
+boxplot(Views ~ CC, data = df)
+```
+
+```{r}
+summary(df$Length)
+boxplot(df$Length)
+```
+
+```{r}
+summary(df$Released)
+boxplot(df$Released)
+```
+
+```{r}
+summary(df$Subscribers)
+boxplot(df$Subscribers)
+```
+
+```{r}
+pairs(Views ~ CC + Released + Length + Subscribers + Category, data=df)
+```
+
+## Sentiment Analysis / Text mining
 
 TODO by Xinyi
+```{r}
+df_script <- df %>% 
+  select(Title, Transcript)
+head(df_script)
+```
+
+
+```{r}
+data("stop_words")
+custom_stop_words <- rbind(stop_words, c("_", "custom"))
+```
+
+```{r}
+#bigram
+df_script %>% 
+  group_by(Title) %>% 
+  unnest_tokens(word, Transcript, token = "ngrams", n = 2) 
+```
+
+
+
+```{r}
+df_script<- df_script %>% 
+  group_by(Title) %>% 
+  unnest_tokens(word, Transcript) %>% 
+  anti_join(custom_stop_words) %>% 
+  count(word, sort = TRUE) %>% 
+  mutate(total = sum(n)) %>% 
+  ungroup()
+  #inner_join(get_sentiments("afinn")) #%>% 
+  #summarise(sentiment = sum(value))
+  #mutate(total = sum(word)) %>% 
+  #mutate(perc = round(n/total, 2))
+
+head(df_script)
+```
+
+```{r}
+df_script %>% 
+  group_by(Title) %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  mutate(afinn_score = sum(value)) %>% 
+  mutate(perc = round(n/total, 2))
+```
+
+
 
 ## Preparation for Cross-Validation
 
@@ -152,7 +209,11 @@ df_test <- df[-train_index,]
 
 ## Linear Regression
 
-TODO by Xinyi
+```{r}
+lm1 <- lm(Views ~ CC + Released + Length + Subscribers, data=df)
+summary(lm1)
+```
+
 
 ## Regression Tree
 
