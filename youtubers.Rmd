@@ -30,13 +30,27 @@ df_raw <- read.csv("data.csv")
 head(df_raw)
 ```
 
+![](assets/video.png)
+
 ## Research Goal
 
 Do a sentiment analysis on the subtitles and find the best multiple linear regression model to predict the number of views using Subscribers, CC, Released, Category, Sentiment and Length.
 
+## Tasks
+
+1. Data Cleaning.       
+2. Conduct a sentiment analysis on the subtitles.         
+3. Try various statistical models like linear regression, decision tree and random forest.        
+4. Compare these models in terms of prediction performation and interpretability.       
+
 ## Data Cleaning
 
-We notice several problems in the data, like:     
+
+```{r}
+df_raw %>% select(Views, Subscribers, Released, Length) %>% head(10)
+```
+
+Looking at the data, we notice several problems in the data, like:     
 
 1. Views: The Views variable is in string format and the units are different, like "10K views", "10M views". We prefer it to be in number and in the same unit in order to conduct statistical analysis.       
 
@@ -103,7 +117,7 @@ df <- df %>% mutate(
   Released = map_dbl(Released, cleanReleased)
 )
 
-head(df)
+df %>% select(Views, Subscribers, Released, Length) %>% head(10)
 
 # Save for future use
 write_csv(df, "cleaned_data.csv")
@@ -123,23 +137,12 @@ head(df)
 
 ```{r}
 table(df$CC)
-boxplot(Views ~ CC, data = df)
-```
+boxplot(log(Views) ~ CC, data = df)
 
 ```{r}
 summary(df$Length)
-boxplot(df$Length)
-```
-
-```{r}
 summary(df$Released)
-boxplot(df$Released)
-```
-
-```{r}
 summary(df$Subscribers)
-boxplot(df$Subscribers)
-```
 
 ```{r}
 pairs(Views ~ CC + Released + Length + Subscribers + Category, data=df)
