@@ -89,7 +89,7 @@ cleanLength <- function(str) {
   if (len == 3) {
      h <- as.numeric(list[[1]][1])
      m <- as.numeric(list[[1]][2])
-     return((m + 1) + 60*m)
+     return((m + 1) + 60*h)
   } else {
      m <- as.numeric(list[[1]][1])
      return(m+1)
@@ -140,9 +140,14 @@ head(df)
 table(df$CC)
 boxplot(log(Views) ~ CC, data = df)
 
-summary(df$Length)
+hist(df$Length, xlab = "Minutes", breaks = 50)
+summary(df$Length) 
+
 summary(df$Released)
+hist(df$Released, xlab = "Month Ago")
+
 summary(df$Subscribers)
+hist(df$Subscribers, xlab = "K Subscribers")
 
 pairs(Views ~ CC + Released + Length + Subscribers + Category, data=df)
 ```
