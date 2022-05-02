@@ -264,11 +264,22 @@ df_afinn <- df_afinn %>%
 
 df_afinn
 ```
+```{r}
+df_bing <- df_script %>% 
+  group_by(Title) %>% 
+  inner_join(get_sentiments("bing")) %>% 
+  select(Title, sentiment) %>% 
+  unique() %>% 
+  mutate(bing_sentiment = as.factor(sentiment))
+```
+
+
+
 
 ```{r}
 df <- df %>% 
-  right_join(df_afinn) %>% 
-  unique()
+  right_join(df_bing) %>% 
+  unique() 
 
 
 df
@@ -290,17 +301,20 @@ df_test <- df[-train_index,]
 ## Linear Regression
 
 ```{r}
-pairs(Views ~ CC + Released + Length + Subscribers + Category + afinn_score, data=df)
+pairs(Views ~ CC + Released + log10(Length) + Subscribers + Category + bing_sentiment, data=df)
+```
+
+
+```{r}
+boxplot(Views ~ bing_sentiment, data = df)
 ```
 
 
 
 
 
-
-
 ```{r}
-lm1 <- lm(Views ~ CC + Released + Length + Subscribers + afinn_score, data=df)
+lm1 <- lm(Views ~ CC + Released + Length + Subscribers + bing_sentiment, data=df)
 summary(lm1)
 ```
 
@@ -319,7 +333,7 @@ qqline(resid(lm1))
 
 
 ```{r}
-lm2 <- lm(Views ~ CC + Released + log10(Length) + Subscribers + afinn_score, data=df)
+lm2 <- lm(Views ~ CC + Released + log10(Length) + Subscribers + bing_sentiment, data=df)
 summary(lm2)
 ```
 
@@ -335,6 +349,37 @@ hist(resid(lm2))
 qqnorm(resid(lm2))
 qqline(resid(lm2))
 ```
+
+
+```{r}
+lm3 <- lm(Views ~ CC + Released + log10(Length) + Subscribers , data=df)
+summary(lm3)
+```
+
+```{r}
+plot(predict(lm3), resid(lm3), xlab = "Fitted values", ylab = "Residuals")
+abline(h=0)
+```
+```{r}
+par(mfrow=c(1,2))
+hist(resid(lm3))
+qqnorm(resid(lm3))
+qqline(resid(lm3))
+```
+
+```{r}
+lm4 <- lm(Views ~ CC + log10(Length) + Subscribers , data=df)
+summary(lm4)
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(resid(lm4))
+qqnorm(resid(lm4))
+qqline(resid(lm4))
+```
+
+
 
 
 ## Regression Tree
