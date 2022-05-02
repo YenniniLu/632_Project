@@ -19,6 +19,7 @@ library(rpart)
 library(rpart.plot)
 library(caret)
 library(tidytext)
+library(tidyr)
 ```
 
 ## Research Data
@@ -155,6 +156,15 @@ df_script <- df %>%
 head(df_script)
 ```
 
+```{r}
+# just use this code to watch the video to check the transcript
+df %>% 
+  filter(Title == "Former CIA Agent Breaks Down Jeffrey Epstein Case")
+```
+
+
+
+
 
 ```{r}
 data("stop_words")
@@ -163,11 +173,48 @@ custom_stop_words <- rbind(stop_words, c("_", "custom"))
 
 ```{r}
 #bigram
-df_script %>% 
+bigrams_separated <- df_script %>% 
   group_by(Title) %>% 
-  unnest_tokens(word, Transcript, token = "ngrams", n = 2) 
+  # unnest Transcript in bigram format
+  unnest_tokens(bigram, Transcript, token = "ngrams", n = 2) %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") %>% # separate bigram 
+  filter(!word1 %in% custom_stop_words$word) %>% # filter out all the stop words
+  filter(!word2 %in% custom_stop_words$word) 
+  
+bigrams_united <- bigrams_separated %>% 
+  unite(bigram, word1, word2, sep = " ")  # unite words back together
+
 ```
 
+```{r}
+head(bigrams_separated)
+```
+
+
+
+```{r}
+# bigram tf-idf
+bigram_tf_idf <- bigrams_united %>%
+  count(Title, bigram) %>%
+  bind_tf_idf(bigram, Title, n) %>%
+  arrange(desc(tf_idf))
+
+head(bigram_tf_idf)
+```
+
+
+
+```{r}
+# Using bigrams to provide context in sentiment analysis
+
+negation_words <- c("not", "no", "never", "without")
+
+bigrams_separated %>%
+  filter(word1 %in% negation_words) %>%
+  inner_join(get_sentiments("afinn"), by = c(word2 = "word")) %>%
+  count(word1, word2, value, sort = TRUE)
+
+```
 
 
 ```{r}
@@ -186,12 +233,20 @@ df_script<- df_script %>%
 head(df_script)
 ```
 
+
+Below codes:
+use tf-idf to find the importance of a word in the transcript, then times it to a word's afinn score, and sum up all the words' socre to a video afinn_score.
+Will use "afinn_score" to represent the sentiment score in the regression modeling!
 ```{r}
 df_script %>% 
   group_by(Title) %>% 
   inner_join(get_sentiments("afinn")) %>% 
-  mutate(afinn_score = sum(value)) %>% 
-  mutate(perc = round(n/total, 2))
+  #mutate(afinn_score = sum(value)) %>% 
+  #mutate(perc = round(n/total, 2)) %>% 
+  bind_tf_idf(word, Title, n) %>% 
+  mutate(afinn_score = sum(value*tf_idf)) %>%
+  ungroup() 
+  #filter(Title == "2018 Jeep Trackhawk Review - The SUV That's Quicker Than a Supercar")
 ```
 
 
