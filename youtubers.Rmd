@@ -152,6 +152,13 @@ hist(df$Subscribers, xlab = "K Subscribers")
 pairs(Views ~ CC + Released + Length + Subscribers + Category, data=df)
 ```
 
+```{r}
+hist(df$Views)
+```
+
+
+
+
 ## Sentiment Analysis / Text mining
 
 TODO by Xinyi
@@ -265,6 +272,16 @@ df_afinn <- df_afinn %>%
 df_afinn
 ```
 ```{r}
+summary(df_afinn$afinn_score)
+```
+
+```{r}
+hist(df_afinn$afinn_score)
+```
+
+
+
+```{r}
 df_bing <- df_script %>% 
   group_by(Title) %>% 
   inner_join(get_sentiments("bing")) %>% 
@@ -279,10 +296,11 @@ df_bing <- df_script %>%
 ```{r}
 df <- df %>% 
   right_join(df_bing) %>% 
+  right_join(df_afinn) %>% 
   unique() 
 
 
-df
+head(df)
 ```
 
 
@@ -301,12 +319,12 @@ df_test <- df[-train_index,]
 ## Linear Regression
 
 ```{r}
-pairs(Views ~ CC + Released + log10(Length) + Subscribers + Category + bing_sentiment, data=df)
+pairs(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + log10(afinn_score), data=df)
 ```
 
 
 ```{r}
-boxplot(Views ~ bing_sentiment, data = df)
+boxplot(log10(Views) ~ log10(afinn_score), data = df)
 ```
 
 
@@ -314,7 +332,7 @@ boxplot(Views ~ bing_sentiment, data = df)
 
 
 ```{r}
-lm1 <- lm(Views ~ CC + Released + Length + Subscribers + bing_sentiment, data=df)
+lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + bing_sentiment, data=df)
 summary(lm1)
 ```
 
@@ -333,7 +351,7 @@ qqline(resid(lm1))
 
 
 ```{r}
-lm2 <- lm(Views ~ CC + Released + log10(Length) + Subscribers + bing_sentiment, data=df)
+lm2 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + bing_sentiment, data=df)
 summary(lm2)
 ```
 
@@ -380,6 +398,9 @@ qqline(resid(lm4))
 ```
 
 
+```{r}
+step(lm2)
+```
 
 
 ## Regression Tree
@@ -443,7 +464,7 @@ linear regression | - | - | - | - | -
 regression tree | - | - | - | - | -
 random forest | - | - | - | - | -
 
-### Regression Tree VS Random Forest 
+### Linear Regression vs Regression Tree VS Random Forest 
 
 Aggregated/ensemble models are not universally better than their "single" counterparts, they are better if and only if the single models suffer of instability. With XX training rows and only XX columns, we are in a comfortable training sample size situation in which even a decision tree may get reasonably stable.
 
