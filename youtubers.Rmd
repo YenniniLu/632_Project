@@ -50,7 +50,7 @@ Do a sentiment analysis on the subtitles and find the best multiple linear regre
 
 
 ```{r}
-df_raw %>% select(Views, Subscribers, Released, Length) %>% head(10)
+df_raw %>% dplyr::select(URL, Channel, Views, Subscribers, Released, Length) %>% head(10)
 ```
 
 Looking at the data, we notice several problems in the data, like:     
@@ -108,8 +108,11 @@ cleanReleased <- function(str) {
 
 # Remove NAs
 df <- df_raw %>%  
+  na.omit() %>%
   filter(
-    !is.na(Released) & Released != ""
+    Released != "",
+    Title != "",
+    Transcript != ""
   ) 
 
 # Clean the data
@@ -120,7 +123,7 @@ df <- df %>% mutate(
   Released = map_dbl(Released, cleanReleased)
 )
 
-df %>% select(Views, Subscribers, Released, Length) %>% head(10)
+df %>% dplyr::select(URL, Channel, Views, Subscribers, Released, Length) %>% head(10)
 
 # Save for future use
 write_csv(df, "cleaned_data.csv")
@@ -166,7 +169,7 @@ From the diagnostics, Views, Subscribers, Released and Length need log transform
 TODO by Xinyi
 ```{r}
 df_script <- df %>% 
-  select(Title, Transcript)
+  dplyr::select(Id, Title, Transcript)
 head(df_script)
 ```
 
@@ -185,7 +188,7 @@ custom_stop_words <- rbind(stop_words, c("_", "custom"))
 ```{r}
 #bigram
 bigrams_separated <- df_script %>% 
-  group_by(Title) %>% 
+  group_by(Id) %>% 
   # unnest Transcript in bigram format
   unnest_tokens(bigram, Transcript, token = "ngrams", n = 2) %>% 
   separate(bigram, c("word1", "word2"), sep = " ") %>% # separate bigram 
@@ -229,8 +232,8 @@ bigrams_separated %>%
 
 
 ```{r}
-df_word <- df_script %>% 
-  group_by(Title) %>% 
+df_word <- df %>% 
+  group_by(Id) %>% 
   unnest_tokens(word, Transcript) %>% 
   anti_join(custom_stop_words) %>% 
   count(word, sort = TRUE) %>% 
@@ -271,11 +274,12 @@ Will use "afinn_score" to represent the sentiment score in the regression modeli
 Transcript sentiment
 ```{r}
 df_afinn <- df_word %>% 
-  inner_join(get_sentiments("afinn")) %>% 
+  left_join(get_sentiments("afinn")) %>% 
   #mutate(afinn_score = sum(value)) %>% 
   #mutate(perc = round(n/total, 2)) %>% 
-  group_by(Title) %>% 
-  bind_tf_idf(word, Title, n) %>% 
+  group_by(Id) %>% 
+  bind_tf_idf(word, Id, n) %>% 
+  mutate(value = ifelse(is.na(value), 0, value)) %>%
   mutate(afinn_score = sum(value*tf_idf)) %>%
   ungroup() 
   #filter(Title == "2018 Jeep Trackhawk Review - The SUV That's Quicker Than a Supercar")
@@ -285,7 +289,7 @@ head(df_afinn)
 
 ```{r}
 df_afinn <- df_afinn %>% 
-  select(Title, afinn_score) %>% 
+  dplyr::select(Id, afinn_score) %>% 
   unique() %>% 
   ungroup()
 
@@ -304,11 +308,12 @@ hist(df_afinn$afinn_score)
 Title sentiment
 ```{r}
 df_title_afinn <- df_title_word %>% 
-  inner_join(get_sentiments("afinn")) %>% 
+  left_join(get_sentiments("afinn")) %>% 
   #mutate(afinn_score = sum(value)) %>% 
   #mutate(perc = round(n/total, 2)) %>% 
   group_by(Id) %>% 
   bind_tf_idf(word, Id, n) %>% 
+  mutate(value = ifelse(is.na(value), 0, value)) %>%
   mutate(afinn_title_score = sum(value*tf_idf)) %>%
   ungroup() 
   #filter(Title == "2018 Jeep Trackhawk Review - The SUV That's Quicker Than a Supercar")
@@ -337,8 +342,11 @@ hist(df_title_afinn$afinn_title_score)
 
 ```{r}
 df1 <- df %>% 
-  right_join(df_afinn) %>% 
-  right_join(df_title_afinn) %>% 
+  left_join(df_afinn) %>% 
+  left_join(df_title_afinn) %>% 
+  mutate(
+    afinn_title_score = ifelse(is.na(afinn_title_score), 0, afinn_title_score)
+  ) %>% 
   unique() 
 
 
@@ -357,6 +365,10 @@ Randomly split the data set in a 70% training and 30% test set. Make sure to use
  
 ```{r}
 df1 <- read_csv("cleaned_data_with_sentiment.csv")
+df1$CC <- as.factor(df1$CC)
+df1$Category <- as.factor(df1$Category)
+df1$Subscribers <- as.numeric(df1$Subscribers)
+
 set.seed(652)
 n <- nrow(df1)
 train_index <- sample(1:n, round(0.7*n))
@@ -467,9 +479,10 @@ summary(lm4)
 
 ```{r}
 # Fit tree model
-t1 <- rpart(Views ~ CC + Released + Category + Length + Subscribers + afinn_score,
+t1 <- rpart(Views ~ CC + Released + Category + Length + Subscribers + afinn_score + afinn_title_score,
             data = df_train,
             method = "anova")
+summary(t1)
 
 # Plot the desicion tree
 rpart.plot(t1)
@@ -494,11 +507,11 @@ RMSE(df_test$Views, pred_tree)
 
 ```{r}
 set.seed(652)
-rf1 <- randomForest(Views ~ CC + Released + Category + Length + Subscribers + afinn_score, importance = TRUE, data = df_train)
+rf1 <- randomForest(Views ~ CC + Released + Category + Length + Subscribers + afinn_score + afinn_title_score, importance = TRUE, data = df_train)
 rf1
 ```
 
-Use the `vip()` function to make a variable importance plot.  Which variables are most important? 
+Use the `vip()` function to make a variable importance plot.
 
 ```{r}
 vip(rf1, num_features = 14,  include_type = TRUE)
