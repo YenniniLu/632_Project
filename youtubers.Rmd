@@ -20,6 +20,8 @@ library(rpart.plot)
 library(caret)
 library(tidytext)
 library(tidyr)
+library(MASS)
+library(car)
 ```
 
 ## Research Data
@@ -151,6 +153,7 @@ hist(df$Subscribers, xlab = "K Subscribers")
 
 pairs(Views ~ CC + Released + Length + Subscribers + Category, data=df)
 ```
+
 
 ```{r}
 hist(df$Views)
@@ -310,7 +313,16 @@ plot(log10(Views)~ afinn_score, data = df1)
 ```
 
 
+```{r}
+boxcox(Views ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score, data=df1,
+       lambda = seq(-3, 3, by = 0.05))
+```
 
+```{r}
+summary(powerTransform(Views ~ 
+                         CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score, 
+                       data=df1))
+```
 
 
 ```{r}
@@ -333,7 +345,7 @@ qqline(resid(lm1))
 
 
 ```{r}
-lm2 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + bing_sentiment, data=df)
+lm2 <- lm(log10(Views) ~ CC + log10(Length) + log10(Subscribers) + Category + afinn_score, data=df1)
 summary(lm2)
 ```
 
@@ -352,7 +364,7 @@ qqline(resid(lm2))
 
 
 ```{r}
-lm3 <- lm(Views ~ CC + Released + log10(Length) + Subscribers , data=df)
+lm3 <- lm(log10(Views) ~ CC  + log10(Length) + log10(Subscribers) + afinn_score, data=df1)
 summary(lm3)
 ```
 
@@ -367,21 +379,10 @@ qqnorm(resid(lm3))
 qqline(resid(lm3))
 ```
 
+
 ```{r}
-lm4 <- lm(Views ~ CC + log10(Length) + Subscribers , data=df)
+lm4 <- step(lm1)
 summary(lm4)
-```
-
-```{r}
-par(mfrow=c(1,2))
-hist(resid(lm4))
-qqnorm(resid(lm4))
-qqline(resid(lm4))
-```
-
-
-```{r}
-step(lm2)
 ```
 
 
