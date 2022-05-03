@@ -244,10 +244,31 @@ df_word <- df_script %>%
 head(df_word)
 ```
 
+```{r}
+df_title_word <- df %>% 
+  group_by(Id) %>% 
+  unnest_tokens(word, Title) %>% 
+  anti_join(custom_stop_words) %>% 
+  count(word, sort = TRUE) %>% 
+  mutate(total = sum(n)) %>% 
+  ungroup()
+  #inner_join(get_sentiments("afinn")) #%>% 
+  #summarise(sentiment = sum(value))
+  #mutate(total = sum(word)) %>% 
+  #mutate(perc = round(n/total, 2))
+
+head(df_title_word)
+```
+
+
+
+
 
 Below codes:
 use tf-idf to find the importance of a word in the transcript, then times it to a word's afinn score, and sum up all the words' socre to a video afinn_score.
 Will use "afinn_score" to represent the sentiment score in the regression modeling!
+
+Transcript sentiment
 ```{r}
 df_afinn <- df_word %>% 
   inner_join(get_sentiments("afinn")) %>% 
@@ -270,6 +291,8 @@ df_afinn <- df_afinn %>%
 
 df_afinn
 ```
+
+
 ```{r}
 summary(df_afinn$afinn_score)
 ```
@@ -278,14 +301,48 @@ summary(df_afinn$afinn_score)
 hist(df_afinn$afinn_score)
 ```
 
+Title sentiment
+```{r}
+df_title_afinn <- df_title_word %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  #mutate(afinn_score = sum(value)) %>% 
+  #mutate(perc = round(n/total, 2)) %>% 
+  group_by(Id) %>% 
+  bind_tf_idf(word, Id, n) %>% 
+  mutate(afinn_title_score = sum(value*tf_idf)) %>%
+  ungroup() 
+  #filter(Title == "2018 Jeep Trackhawk Review - The SUV That's Quicker Than a Supercar")
+
+head(df_title_afinn)
+```
+
+
+```{r}
+df_title_afinn <- df_title_afinn %>% dplyr::select(Id, afinn_title_score) %>% 
+  unique() %>% 
+  ungroup()
+
+head(df_title_afinn)
+```
+
+```{r}
+summary(df_title_afinn$afinn_title_score)
+```
+
+```{r}
+hist(df_title_afinn$afinn_title_score)
+```
+
+
 
 ```{r}
 df1 <- df %>% 
   right_join(df_afinn) %>% 
+  right_join(df_title_afinn) %>% 
   unique() 
 
 
-head(df)
+head(df1)
 ```
 
 
@@ -304,7 +361,10 @@ df_test <- df[-train_index,]
 ## Linear Regression
 
 ```{r}
-pairs(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score, data=df1)
+pairs(log10(Views) ~ CC + log10(Released) + 
+        log10(Length) + log10(Subscribers) + Category + 
+        afinn_score + afinn_title_score, 
+      data=df1)
 ```
 
 
@@ -314,19 +374,28 @@ plot(log10(Views)~ afinn_score, data = df1)
 
 
 ```{r}
-boxcox(Views ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score, data=df1,
+plot(log10(Views)~ afinn_title_score, data = df1)
+```
+
+
+```{r}
+boxcox(Views ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score + afinn_title_score,
+       data=df1,
        lambda = seq(-3, 3, by = 0.05))
 ```
 
 ```{r}
 summary(powerTransform(Views ~ 
-                         CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score, 
+                         CC + log10(Released) + log10(Length) +
+                         log10(Subscribers) + Category + afinn_score + afinn_title_score, 
                        data=df1))
 ```
 
 
 ```{r}
-lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score, data=df1)
+lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) +
+            log10(Subscribers) + Category + afinn_score+ afinn_title_score, 
+          data=df1)
 summary(lm1)
 ```
 
