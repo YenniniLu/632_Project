@@ -345,17 +345,23 @@ df1 <- df %>%
 head(df1)
 ```
 
+```{r eval=FALSE}
+# Save for future use
+write_csv(df1, "cleaned_data_with_sentiment.csv")
+```
+
 
 ## Preparation for Cross-Validation
 
 Randomly split the data set in a 70% training and 30% test set. Make sure to use set.seed() so that your results are reproducible
  
 ```{r}
+df1 <- read_csv("cleaned_data_with_sentiment.csv")
 set.seed(652)
 n <- nrow(df1)
 train_index <- sample(1:n, round(0.7*n))
-df_train <- df[train_index,]
-df_test <- df[-train_index,]
+df_train <- df1[train_index,]
+df_test <- df1[-train_index,]
 ```
 
 ## Linear Regression
@@ -461,7 +467,7 @@ summary(lm4)
 
 ```{r}
 # Fit tree model
-t1 <- rpart(Views ~ CC + Released + Category + Length + Subscribers,
+t1 <- rpart(Views ~ CC + Released + Category + Length + Subscribers + afinn_score,
             data = df_train,
             method = "anova")
 
@@ -488,7 +494,7 @@ RMSE(df_test$Views, pred_tree)
 
 ```{r}
 set.seed(652)
-rf1 <- randomForest(Views ~ CC + Released + Category + Length + Subscribers, importance = TRUE, data = df_train)
+rf1 <- randomForest(Views ~ CC + Released + Category + Length + Subscribers + afinn_score, importance = TRUE, data = df_train)
 rf1
 ```
 
