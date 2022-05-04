@@ -174,7 +174,7 @@ df_script <- df %>%
 head(df_script)
 ```
 
-```{r}
+```{r, eval=FALSE}
 # just use this code to watch the video to check the transcript
 df %>% 
   filter(Title == "Former CIA Agent Breaks Down Jeffrey Epstein Case")
@@ -186,9 +186,9 @@ data("stop_words")
 custom_stop_words <- rbind(stop_words, c("_", "custom"))
 ```
 
-```{r}
+```{r, eval=FALSE}
 #bigram
-bigrams_separated <- df_script %>% 
+ bigrams_separated <- df_script %>% 
   group_by(Id) %>% 
   # unnest Transcript in bigram format
   unnest_tokens(bigram, Transcript, token = "ngrams", n = 2) %>% 
@@ -201,7 +201,7 @@ bigrams_united <- bigrams_separated %>%
 
 ```
 
-```{r}
+```{r, eval=FALSE}
 head(bigrams_separated)
 ```
 
@@ -209,15 +209,15 @@ head(bigrams_separated)
 
 
 
-```{r}
+```{r, eval=FALSE}
 # Using bigrams to provide context in sentiment analysis
 # not in presentation!!
-#negation_words <- c("not", "no", "never", "without")
+negation_words <- c("not", "no", "never", "without")
 
-#bigrams_separated %>%
-#  filter(word1 %in% negation_words) %>%
-#  inner_join(get_sentiments("afinn"), by = c(word2 = "word")) %>%
-#  count(word1, word2, value, sort = TRUE)
+bigrams_separated %>%
+  filter(word1 %in% negation_words) %>%
+  inner_join(get_sentiments("afinn"), by = c(word2 = "word")) %>%
+  count(word1, word2, value, sort = TRUE)
 
 ```
 
@@ -258,11 +258,12 @@ head(df_title_word)
 
 
 
-Below codes:
-use tf-idf to find the importance of a word in the transcript, then times it to a word's afinn score, and sum up all the words' socre to a video afinn_score.
-Will use "afinn_score" to represent the sentiment score in the regression modeling!
+# Below codes:
+### use tf-idf to find the importance of a word in the transcript, then times it to a word's afinn score, and sum up all the words' socre to a video afinn_score.
+### Will use "afinn_score" to represent the sentiment score in the regression modeling!
 
-Transcript sentiment
+# Transcript sentiment
+
 ```{r}
 df_afinn <- df_word %>% 
   left_join(get_sentiments("afinn")) %>% 
@@ -296,7 +297,7 @@ summary(df_afinn$afinn_score)
 hist(df_afinn$afinn_score)
 ```
 
-Title sentiment
+# Title sentiment
 ```{r}
 df_title_afinn <- df_title_word %>% 
   left_join(get_sentiments("afinn")) %>% 
@@ -376,49 +377,85 @@ RMSE <- function(y, y_hat) {
 
 ## Linear Regression
 ```{r}
+# original response and predictors
 pairs(Views ~ CC + Released + 
         Length + Subscribers + Category + 
         afinn_score + afinn_title_score, 
       data=df1)
 ```
 
+From the plot above, we didn't see any obvious strong correlation between the predictors.
+
 
 ```{r}
-pairs(log10(Views) ~ CC + log10(Released) + 
-        log10(Length) + log10(Subscribers) + Category + 
+# log reponse and other predictors that are right skewed
+pairs(log(Views) ~ CC + log(Released) + 
+        log(Length) + log(Subscribers) + Category + 
         afinn_score + afinn_title_score, 
       data=df1)
 ```
+From the plot above, we didn't see any obvious strong correlation between the predictors.
 
 
 ```{r}
-plot(log10(Views)~ afinn_score, data = df1)
+round(cor(df1[, c(3,7,11,12,13)]), 2)
+```
+
+
+The correlation table also indicates this.
+
+
+
+```{r, eval=FALSE}
+plot(log(Views)~ afinn_score, data = df1)
+```
+
+
+```{r, eval=FALSE}
+plot(log(Views)~ afinn_title_score, data = df1)
 ```
 
 
 ```{r}
-plot(log10(Views)~ afinn_title_score, data = df1)
-```
-
-
-```{r}
-boxcox(Views ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score + afinn_title_score,
+boxcox(Views ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score + afinn_title_score,
        data=df1,
        lambda = seq(-3, 3, by = 0.05))
 ```
 
+
+
 ```{r}
 summary(powerTransform(Views ~ 
-                         CC + log10(Released) + log10(Length) +
-                         log10(Subscribers) + Category + afinn_score + afinn_title_score, 
+                         CC + log(Released) + log(Length) +
+                         log(Subscribers) + Category + afinn_score + afinn_title_score, 
                        data=df1))
 ```
 
 
 ```{r}
-lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)
+lm_full <- lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)
+summary(lm_full)
+```
+
+
+```{r}
+# include all the predictors and with log transf's
+lm1 <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)
 summary(lm1)
 ```
+
+
+## check variance inflation factors by faraway::vif()
+```{r}
+round(faraway::vif(lm_full), 2)
+```
+
+
+```{r}
+round(faraway::vif(lm1), 2)
+```
+
+
 
 ```{r}
 plot(predict(lm1), resid(lm1), xlab = "Fitted values", ylab = "Residuals")
@@ -435,7 +472,8 @@ qqline(resid(lm1))
 
 
 ```{r}
-lm2 <- lm(log10(Views) ~ CC + log10(Length) + log10(Subscribers) + Category + afinn_score , data=df1)
+# remove log(Length) / Length
+lm2 <- lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score + afinn_title_score, data=df1)
 summary(lm2)
 ```
 
@@ -454,9 +492,11 @@ qqline(resid(lm2))
 
 
 ```{r}
-lm3 <- lm(log10(Views) ~ CC  + log10(Length) + log10(Subscribers) + afinn_score, data=df1)
+# remove log(Length) / Length, afinn_score and afinn_title_score
+lm3 <- lm(log(Views) ~ CC  + log(Length) + log(Subscribers) + Category, data=df1)
 summary(lm3)
 ```
+
 
 ```{r}
 plot(predict(lm3), resid(lm3), xlab = "Fitted values", ylab = "Residuals")
@@ -472,26 +512,38 @@ qqline(resid(lm3))
 
 
 ```{r}
-# lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)
+# lm1 <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score)
 lm4 <- step(lm1)
 summary(lm4)
 ```
 
 
 ```{r}
-# fit lm4 (the final model in MLR part) to df_train
-lm5 <- lm(log10(Views) ~ CC + log10(Length) + log10(Subscribers) + Category + afinn_score, data = df_train)
+plot(predict(lm4), resid(lm4), xlab = "Fitted values", ylab = "Residuals")
+abline(h=0)
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(resid(lm4))
+qqnorm(resid(lm4))
+qqline(resid(lm4))
+```
+
+```{r}
+# fit lm4 (the final model in MLR part) to df_train:
+# lm(formula = log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df1)
+lm5 <- lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)
+
 
 # make prediction
 pred1 <- predict(lm5, newdata = df_test)
+pred1 <- exp(pred1)
+
 
 # Compute the RMSE
-RMSE(df_test$Views, pred1)
+lm_RMSE <- RMSE(df_test$Views, pred1); lm_RMSE
 ```
-
-
-
-
 
 
 ## Regression Tree
@@ -512,6 +564,7 @@ rpart.plot(t1)
 rsq.rpart(t1)
 ```
 
+
 ### Make predictions on the test set and compute the RMSE
 
 ```{r}
@@ -519,15 +572,16 @@ rsq.rpart(t1)
 pred_tree <- predict(t1, newdata = df_test)
 
 # Compute the RMSE
-RMSE(df_test$Views, pred_tree)
+t1_RMSE <- RMSE(df_test$Views, pred_tree); t1_RMSE
 ```
 
 ```{r}
 # test R^2
-cor(df_test$Views, pred_tree)^2
+t1_R2 <- cor(df_test$Views, pred_tree)^2; t1_R2
 ```
 
-
+### Example of interptiation:
+Since the test set R2 for the second model is higher (closer to 1) it performs better. The interpretation is that about 67% of the variability in Sale_Price, on the test set, is explained by predictions from the linear regression model with Gr_Liv_Area and Year_Built as predictor variables.
 
 
 ## Random Forest
@@ -553,18 +607,61 @@ vip(rf1, num_features = 14,  include_type = TRUE)
 pred_rf <- predict(rf1, newdata = df_test)
 
 # Compute the RMSE
-RMSE(df_test$Views, pred_rf)
+rf1_RMSE <- RMSE(df_test$Views, pred_rf); rf1_RMSE
 ```
 
 ```{r}
 # test R^2
-cor(df_test$Views, pred_rf)^2
+rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 ```
 
 
 
 
 ## Conclusion(TODO)
+
+
+```{r}
+# lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)
+summary(lm_full)$r.squared
+# lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)
+summary(lm1)$r.squared 
+# lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score + afinn_title_score, data=df1)
+summary(lm2)$r.squared
+# lm(log(Views) ~ CC  + log(Length) + log(Subscribers) + Category, data=df1)
+summary(lm3)$r.squared
+# lm(formula = log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df1)
+summary(lm4)$r.squared
+# lm(formula = log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)
+summary(lm5)$r.squared
+```
+
+
+```{r}
+summary(lm_full)$adj.r.squared
+summary(lm1)$adj.r.squared
+summary(lm2)$adj.r.squared
+summary(lm3)$adj.r.squared
+summary(lm4)$adj.r.squared
+summary(lm5)$adj.r.squared
+```
+
+
+
+```{r}
+# test R^2 for regression tree
+cor(df_test$Views, pred_tree)^2
+
+# test R^2 for random forest
+cor(df_test$Views, pred_rf)^2
+```
+
+
+
+
+
+
+
 
 Model | RMSE | R Squared | Number of Coefficients | performance | interpretability
 ---- | ---- | ---- | ---- | ---- | ----
