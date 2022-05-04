@@ -671,9 +671,9 @@ summary(lm1)$r.squared
 summary(lm2)$r.squared
 # lm(log(Views) ~ CC  + log(Length) + log(Subscribers) + Category, data=df1)
 summary(lm3)$r.squared
-# lm(formula = log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df1)
+# lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df1)
 summary(lm4)$r.squared
-# lm(formula = log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)
+# lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)
 summary(lm5)$r.squared
 ```
 
@@ -711,41 +711,48 @@ cor(df_test$Views, pred_rf)^2
 ```
 
 
+### Linear Regression vs Regression Tree VS Random Forest 
+
+
+
+
 ```{r}
-data.frame(Model=c("full model without transformation", "lm1", "lm2", "lm3", "lm4", "lm5", "regression tree", "random forest"),
+data.frame(Model=c("full model without transformation", "lm1", "lm2", "lm3", "lm4", "lm5"),
            R_squared = c(summary(lm_full)$r.squared,
                          summary(lm1)$r.squared,
                          summary(lm2)$r.squared,
                          summary(lm3)$r.squared,
                          summary(lm4)$r.squared,
-                         summary(lm5)$r.squared,
-                         cor(df_test$Views, pred_tree)^2,
-                         cor(df_test$Views, pred_rf)^2),
+                         summary(lm5)$r.squared),
            adj_R_squared = c(summary(lm_full)$adj.r.squared,
                              summary(lm1)$adj.r.squared,
                              summary(lm2)$adj.r.squared,
                              summary(lm3)$adj.r.squared,
                              summary(lm4)$adj.r.squared,
-                             summary(lm5)$adj.r.squared,
-                             NA,
-                             NA),
-           RMSE = c(NA, NA, NA, NA, NA,
-                    lm_RMSE,
-                    t1_RMSE,
-                    rf1_RMSE))
+                             summary(lm5)$adj.r.squared),
+           formula = c("lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)",
+                       "lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)",
+                       "lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score + afinn_title_score, data=df1)",
+                       "lm(log(Views) ~ CC  + log(Length) + log(Subscribers) + Category, data=df1)",
+                       "lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df1)",
+                       "lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)"
+                       ))
 ```
 
 
 
-Model | RMSE | R Squared | adj R Square | Number of coefficients   
---------- | --------- | --------- | --------- | 
-linear regression | 7618.171 | 0.8162162 | 0.8130322 | 26 | 
-regression tree | 7977.73 | 0.7801641 | - | - | 
-random forest | 6660.282 | 0.836752 | - | - | 
-
-### Linear Regression vs Regression Tree VS Random Forest 
+```{r}
+data.frame(Model=c("linear regression", "regression tree", "random forest"),
+           R_squared = c(summary(lm5)$r.squared,
+                         cor(df_test$Views, pred_tree)^2,
+                         cor(df_test$Views, pred_rf)^2),
+           RMSE = c(lm_RMSE,
+                    t1_RMSE,
+                    rf1_RMSE))
+```
 
 Aggregated/ensemble models are not universally better than their "single" counterparts, they are better if and only if the single models suffer of instability. With XX training rows and only XX columns, we are in a comfortable training sample size situation in which even a decision tree may get reasonably stable.
+
 
 
 
