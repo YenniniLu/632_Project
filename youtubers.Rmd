@@ -510,7 +510,7 @@ qqnorm(resid(lm3))
 qqline(resid(lm3))
 ```
 
-
+# variable selection
 ```{r}
 # lm1 <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score)
 lm4 <- step(lm1)
@@ -538,11 +538,11 @@ lm5 <- lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_sc
 
 # make prediction
 pred1 <- predict(lm5, newdata = df_test)
-pred1 <- exp(pred1)
+pred_lm5 <- exp(pred1); length(pred_lm5)
 
 
 # Compute the RMSE
-lm_RMSE <- RMSE(df_test$Views, pred1); lm_RMSE
+lm_RMSE <- RMSE(df_test$Views, pred_lm5); lm_RMSE
 ```
 
 
@@ -586,25 +586,43 @@ Since the test set R2 for the second model is higher (closer to 1) it performs b
 
 ## Random Forest
 
-### Fit a Random Forest on the training set usinng the defaults for mtry and ntree.
+### Fit a Random Forest on the training set usinng the defaults for mtry and ntree = 500.
+### default mtry: p/3 = 28/3 = 9 (mtry: Number of predictors randomly sampled as candidates at each split.)
+
+
+```{r}
+length(lm_full$coefficients)
+```
 
 ```{r}
 set.seed(652)
-rf1 <- randomForest(Views ~ CC + Released + Category + Length + Subscribers + afinn_score + afinn_title_score, importance = TRUE, data = df_train)
+rf1 <- randomForest(Views ~ CC + Released + Category + 
+                      Length + Subscribers + afinn_score + 
+                      afinn_title_score, importance = TRUE, 
+                    data = df_train)
 rf1
 ```
 
 Use the `vip()` function to make a variable importance plot.
+# Use below to do interpreation with random forests.
+## i.e. In this rf model, we know that to predict the Views of a youtube viedo, the most important predictor is Subscribers of Channel, and then is the Video's Category, and the Length of Video. 
+
+
 
 ```{r}
 vip(rf1, num_features = 14,  include_type = TRUE)
 ```
 
+```{r}
+plot(c(1: 500), rf1$mse, xlab="ntree", ylab="MSE", type="l")
+```
+
+
 ### Make predictions on the test set and compute the RMSE
 
 ```{r}
 # Make prediction
-pred_rf <- predict(rf1, newdata = df_test)
+pred_rf <- predict(rf1, newdata = df_test); length(pred_rf)
 
 # Compute the RMSE
 rf1_RMSE <- RMSE(df_test$Views, pred_rf); rf1_RMSE
@@ -616,10 +634,33 @@ rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 ```
 
 
+```{r}
+pred_df <- data.frame(
+  Actual = df_test$Views, 
+  Pred_RF = pred_rf,
+  Pred_LM = pred_lm5
+) 
+```
+
+
+```{r}
+ggplot(pred_df, aes(x = Actual, y = Pred_RF)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  xlab("Actual Views") + ylab("Predicted Views") +
+  ggtitle("Random Forests") 
+```
+
+```{r}
+ggplot(pred_df, aes(x = Actual, y = Pred_LM)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  xlab("Actual Views") + ylab("Predicted Views") +
+  ggtitle("Linear Regression") 
+```
 
 
 ## Conclusion(TODO)
-
 
 ```{r}
 # lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)
@@ -646,6 +687,18 @@ summary(lm4)$adj.r.squared
 summary(lm5)$adj.r.squared
 ```
 
+```{r}
+t1_R2 # regression tree's R2
+rf1_R2 # Random forest' R2
+```
+
+```{r}
+lm_RMSE # lm5's RMSE
+t1_RMSE # regression tree's RMSE
+rf1_RMSE # Random forest' R2
+```
+
+
 
 
 ```{r}
@@ -654,24 +707,46 @@ cor(df_test$Views, pred_tree)^2
 
 # test R^2 for random forest
 cor(df_test$Views, pred_rf)^2
+
+```
+
+
+```{r}
+data.frame(Model=c("full model without transformation", "lm1", "lm2", "lm3", "lm4", "lm5", "regression tree", "random forest"),
+           R_squared = c(summary(lm_full)$r.squared,
+                         summary(lm1)$r.squared,
+                         summary(lm2)$r.squared,
+                         summary(lm3)$r.squared,
+                         summary(lm4)$r.squared,
+                         summary(lm5)$r.squared,
+                         cor(df_test$Views, pred_tree)^2,
+                         cor(df_test$Views, pred_rf)^2),
+           adj_R_squared = c(summary(lm_full)$adj.r.squared,
+                             summary(lm1)$adj.r.squared,
+                             summary(lm2)$adj.r.squared,
+                             summary(lm3)$adj.r.squared,
+                             summary(lm4)$adj.r.squared,
+                             summary(lm5)$adj.r.squared,
+                             NA,
+                             NA),
+           RMSE = c(NA, NA, NA, NA, NA,
+                    lm_RMSE,
+                    t1_RMSE,
+                    rf1_RMSE))
 ```
 
 
 
-
-
-
-
-
-Model | RMSE | R Squared | Number of Coefficients | performance | interpretability
----- | ---- | ---- | ---- | ---- | ----
-linear regression | - | - | - | - | -
-regression tree | - | - | - | - | -
-random forest | - | - | - | - | -
+Model | RMSE | R Squared | adj R Square | Number of coefficients   
+--------- | --------- | --------- | --------- | 
+linear regression | 7618.171 | 0.8162162 | 0.8130322 | 26 | 
+regression tree | 7977.73 | 0.7801641 | - | - | 
+random forest | 6660.282 | 0.836752 | - | - | 
 
 ### Linear Regression vs Regression Tree VS Random Forest 
 
 Aggregated/ensemble models are not universally better than their "single" counterparts, they are better if and only if the single models suffer of instability. With XX training rows and only XX columns, we are in a comfortable training sample size situation in which even a decision tree may get reasonably stable.
+
 
 
 
