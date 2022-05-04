@@ -1,9 +1,9 @@
 ---
 title: "632 Project"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
 
 ```{r message=FALSE}
 library(tidyverse)
+library(dplyr)
 library(stringr)
 library(randomForest) 
 library(vip) 
@@ -206,27 +207,17 @@ head(bigrams_separated)
 
 
 
-```{r}
-# bigram tf-idf
-bigram_tf_idf <- bigrams_united %>%
-  count(Title, bigram) %>%
-  bind_tf_idf(bigram, Title, n) %>%
-  arrange(desc(tf_idf))
-
-head(bigram_tf_idf)
-```
-
 
 
 ```{r}
 # Using bigrams to provide context in sentiment analysis
 # not in presentation!!
-negation_words <- c("not", "no", "never", "without")
+#negation_words <- c("not", "no", "never", "without")
 
-bigrams_separated %>%
-  filter(word1 %in% negation_words) %>%
-  inner_join(get_sentiments("afinn"), by = c(word2 = "word")) %>%
-  count(word1, word2, value, sort = TRUE)
+#bigrams_separated %>%
+#  filter(word1 %in% negation_words) %>%
+#  inner_join(get_sentiments("afinn"), by = c(word2 = "word")) %>%
+#  count(word1, word2, value, sort = TRUE)
 
 ```
 
@@ -330,6 +321,8 @@ df_title_afinn <- df_title_afinn %>% dplyr::select(Id, afinn_title_score) %>%
 head(df_title_afinn)
 ```
 
+
+
 ```{r}
 summary(df_title_afinn$afinn_title_score)
 ```
@@ -374,9 +367,21 @@ n <- nrow(df1)
 train_index <- sample(1:n, round(0.7*n))
 df_train <- df1[train_index,]
 df_test <- df1[-train_index,]
+
+# function to compute RMSE
+RMSE <- function(y, y_hat) {
+  sqrt(mean((y - y_hat)^2))
+}
 ```
 
 ## Linear Regression
+```{r}
+pairs(Views ~ CC + Released + 
+        Length + Subscribers + Category + 
+        afinn_score + afinn_title_score, 
+      data=df1)
+```
+
 
 ```{r}
 pairs(log10(Views) ~ CC + log10(Released) + 
@@ -411,9 +416,7 @@ summary(powerTransform(Views ~
 
 
 ```{r}
-lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) +
-            log10(Subscribers) + Category + afinn_score+ afinn_title_score, 
-          data=df1)
+lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)
 summary(lm1)
 ```
 
@@ -432,7 +435,7 @@ qqline(resid(lm1))
 
 
 ```{r}
-lm2 <- lm(log10(Views) ~ CC + log10(Length) + log10(Subscribers) + Category + afinn_score, data=df1)
+lm2 <- lm(log10(Views) ~ CC + log10(Length) + log10(Subscribers) + Category + afinn_score , data=df1)
 summary(lm2)
 ```
 
@@ -459,6 +462,7 @@ summary(lm3)
 plot(predict(lm3), resid(lm3), xlab = "Fitted values", ylab = "Residuals")
 abline(h=0)
 ```
+
 ```{r}
 par(mfrow=c(1,2))
 hist(resid(lm3))
@@ -468,9 +472,26 @@ qqline(resid(lm3))
 
 
 ```{r}
+# lm1 <- lm(log10(Views) ~ CC + log10(Released) + log10(Length) + log10(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)
 lm4 <- step(lm1)
 summary(lm4)
 ```
+
+
+```{r}
+# fit lm4 (the final model in MLR part) to df_train
+lm5 <- lm(log10(Views) ~ CC + log10(Length) + log10(Subscribers) + Category + afinn_score, data = df_train)
+
+# make prediction
+pred1 <- predict(lm5, newdata = df_test)
+
+# Compute the RMSE
+RMSE(df_test$Views, pred1)
+```
+
+
+
+
 
 
 ## Regression Tree
@@ -501,6 +522,14 @@ pred_tree <- predict(t1, newdata = df_test)
 RMSE(df_test$Views, pred_tree)
 ```
 
+```{r}
+# test R^2
+cor(df_test$Views, pred_tree)^2
+```
+
+
+
+
 ## Random Forest
 
 ### Fit a Random Forest on the training set usinng the defaults for mtry and ntree.
@@ -526,6 +555,14 @@ pred_rf <- predict(rf1, newdata = df_test)
 # Compute the RMSE
 RMSE(df_test$Views, pred_rf)
 ```
+
+```{r}
+# test R^2
+cor(df_test$Views, pred_rf)^2
+```
+
+
+
 
 ## Conclusion(TODO)
 
