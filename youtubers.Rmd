@@ -527,8 +527,7 @@ abline(h=0)
 ```{r}
 par(mfrow=c(1,2))
 hist(resid(lm3))
-qqnorm(resid(lm3))
-qqline(resid(lm3))
+qqPlot(lm3$residuals)
 ```
 
 # variable selection
@@ -547,8 +546,7 @@ abline(h=0)
 ```{r}
 par(mfrow=c(1,2))
 hist(resid(lm4))
-qqnorm(resid(lm4))
-qqline(resid(lm4))
+qqPlot(lm4$residuals)
 ```
 
 ```{r}
@@ -566,6 +564,13 @@ pred_lm5 <- exp(pred1); length(pred_lm5)
 lm_RMSE <- RMSE(df_test$Views, pred_lm5); lm_RMSE
 ```
 
+
+
+```{r}
+par(mfrow = c(1,2))
+plot(lm5, 1)
+qqPlot(lm5$residuals)
+```
 
 ## Regression Tree
 
