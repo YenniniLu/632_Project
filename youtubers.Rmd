@@ -455,6 +455,27 @@ round(faraway::vif(lm_full), 2)
 round(faraway::vif(lm1), 2)
 ```
 
+```{r}
+ggplot(df1, aes(x=Category, y=Views, fill=Category)) +
+  geom_boxplot() +
+  coord_flip() +
+  ggtitle('Views by Category') 
+```
+
+```{r}
+df1 %>% 
+  filter(Category == "VideoGames") %>% 
+  arrange(desc(Views)) %>% 
+  head(10)
+```
+```{r}
+df1 %>% 
+  arrange(desc(Views)) %>% 
+  dplyr::select(Channel, Subscribers, Title, Views, Category)
+  head(10)
+```
+
+
 
 
 ```{r}
@@ -752,6 +773,33 @@ data.frame(Model=c("linear regression", "regression tree", "random forest"),
 ```
 
 Aggregated/ensemble models are not universally better than their "single" counterparts, they are better if and only if the single models suffer of instability. With XX training rows and only XX columns, we are in a comfortable training sample size situation in which even a decision tree may get reasonably stable.
+
+
+# make this prediction and to calculate a 95% prediction interval.
+
+```{r}
+df1[300, ]
+```
+
+```{r}
+new_x <- data.frame(CC = "0", Length = 12,  Subscribers = 1590, Category = "Tech,Comedy", afinn_score = 0.1143453)
+exp(predict(lm5, newdata = new_x, interval="prediction"))
+```
+
+
+```{r}
+df1[2000, ]
+```
+
+```{r}
+new_x <- data.frame(CC = "1", Length = 7,  Subscribers = 18700, Category = "Food", afinn_score = 0.4008991)
+exp(predict(lm5, newdata = new_x, interval="prediction"))
+```
+
+
+
+
+
 
 
 
