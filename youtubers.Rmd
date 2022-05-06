@@ -599,12 +599,11 @@ pred_tree <- predict(t1, newdata = df_test)
 
 # Compute the RMSE
 t1_RMSE <- RMSE(df_test$Views, pred_tree); t1_RMSE
-```
 
-```{r}
-# test R^2
+# Compute R^2
 t1_R2 <- cor(df_test$Views, pred_tree)^2; t1_R2
 ```
+
 
 ### Example of interptiation:
 Since the test set R2 for the second model is higher (closer to 1) it performs better. The interpretation is that about 67% of the variability in Sale_Price, on the test set, is explained by predictions from the linear regression model with Gr_Liv_Area and Year_Built as predictor variables.
@@ -622,11 +621,15 @@ length(lm_full$coefficients)
 
 ```{r}
 set.seed(652)
+# Fit random forest mode using the training set
 rf1 <- randomForest(Views ~ CC + Released + Category + 
                       Length + Subscribers + afinn_score + 
                       afinn_title_score, importance = TRUE, 
                     data = df_train)
 rf1
+
+# Make a variable importance plot
+vip(rf1, num_features = 14,  include_type = TRUE)
 ```
 
 Use the `vip()` function to make a variable importance plot.
@@ -648,10 +651,13 @@ plot(c(1: 500), rf1$mse, xlab="ntree", ylab="MSE", type="l")
 
 ```{r}
 # Make prediction
-pred_rf <- predict(rf1, newdata = df_test); length(pred_rf)
+pred_rf <- predict(rf1, newdata = df_test);
 
 # Compute the RMSE
 rf1_RMSE <- RMSE(df_test$Views, pred_rf); rf1_RMSE
+
+# Compute R^2
+rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 ```
 
 ```{r}
@@ -764,7 +770,6 @@ data.frame(Model=c("full model without transformation", "lm1", "lm2", "lm3", "lm
                        "lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)"
                        ))
 ```
-
 
 
 ```{r}
