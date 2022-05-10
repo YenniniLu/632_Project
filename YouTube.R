@@ -257,6 +257,31 @@ qqnorm(resid(lm_step_train))
 qqline(resid(lm_step_train))
 
 
+# Make prediction
+pred_lm <- predict(lm_step_train, newdata = df_test);
+
+# Compute the RMSE
+lm_RMSE <- RMSE(df_test$Views, pred_lm); lm_RMSE
+
+
+# make this prediction and to calculate a 95% prediction interval.
+
+# randomly pick one youtube video from data set
+df1[300, ]
+
+# use the above to predict View and compare with the actual View
+new_x <- data.frame(CC = "0", Length = 12,  Subscribers = 1590, Category = "Tech,Comedy", afinn_score = 0.1143453)
+exp(predict(lm_step_train, newdata = new_x, interval="prediction"))
+
+# do it agian with anothe video
+df1[2000, ]
+new_x <- data.frame(CC = "1", Length = 7,  Subscribers = 18700, Category = "Food", afinn_score = 0.4008991)
+exp(predict(lm_step_train, newdata = new_x, interval="prediction"))
+
+
+
+
+
 # Regression Tree
 
 # Fit a regression tree on the training set.
@@ -313,8 +338,34 @@ rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 
 
+# Conclusion
+
+data.frame(Model=c("lm_full_train","full model without transformation",  "lm1_train","lm1", "lm_step_train"),
+           R_squared = c(summary(lm_full_train)$r.squared,
+                         summary(lm_full)$r.squared,
+                         summary(lm1_train)$r.squared,
+                         summary(lm1)$r.squared,
+                         summary(lm_step_train)$r.squared),
+           adj_R_squared = c( summary(lm_full_train)$adj.r.squared,
+                              summary(lm_full)$adj.r.squared,
+                              summary(lm1_train)$adj.r.squared,
+                              summary(lm1)$adj.r.squared,
+                             summary(lm_step_train)$adj.r.squared),
+           formula = c("lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df_train)",
+                       "lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)",
+                       "lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df_train)",
+                       "lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)",
+                       "lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_title_score, data = df_train)"))
 
 
+
+data.frame(Model=c("linear regression", "regression tree", "random forest"),
+           R_squared = c(summary(lm_step_train)$r.squared,
+                         cor(df_test$Views, pred_tree)^2,
+                         cor(df_test$Views, pred_rf)^2),
+           RMSE = c(lm_RMSE,
+                    t1_RMSE,
+                    rf1_RMSE))
 
 
 
