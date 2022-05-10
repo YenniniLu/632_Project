@@ -437,6 +437,36 @@ lm_full <- lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_sc
 summary(lm_full)
 ```
 
+```{r}
+lm_full_train <- lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df_train)
+summary(lm_full_train)
+```
+
+```{r}
+# make prediction for full model without transformer
+pred1 <- predict(lm_full_train, newdata = df_test)
+pred_full <- pred1; length(pred_full)
+
+
+# Compute the RMSE
+lm_full_RMSE <- RMSE(df_test$Views, pred_full); lm_full_RMSE
+```
+
+```{r}
+# include all the predictors and with log transf's
+lm1_train <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df_train)
+summary(lm1_train)
+```
+
+```{r}
+# make prediction for full model with log transformer
+pred2 <- predict(lm1_train, newdata = df_test)
+pred2 <- exp(pred2); length(pred2)
+
+
+# Compute the RMSE
+lm_log_RMSE <- RMSE(df_test$Views, pred2); lm_log_RMSE
+```
 
 ```{r}
 # include all the predictors and with log transf's
@@ -468,6 +498,7 @@ df1 %>%
   arrange(desc(Views)) %>% 
   head(10)
 ```
+
 ```{r}
 df1 %>% 
   arrange(desc(Views)) %>% 
@@ -533,7 +564,7 @@ qqPlot(lm3$residuals)
 # variable selection
 ```{r}
 # lm1 <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score)
-lm4 <- step(lm1)
+lm4 <- step(lm1_train)
 summary(lm4)
 ```
 
@@ -549,20 +580,7 @@ hist(resid(lm4))
 qqPlot(lm4$residuals)
 ```
 
-```{r}
-# fit lm4 (the final model in MLR part) to df_train:
-# lm(formula = log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df1)
-lm5 <- lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)
 
-
-# make prediction
-pred1 <- predict(lm5, newdata = df_test)
-pred_lm5 <- exp(pred1); length(pred_lm5)
-
-
-# Compute the RMSE
-lm_RMSE <- RMSE(df_test$Views, pred_lm5); lm_RMSE
-```
 
 
 
@@ -749,26 +767,28 @@ cor(df_test$Views, pred_rf)^2
 
 
 ```{r}
-data.frame(Model=c("full model without transformation", "lm1", "lm2", "lm3", "lm4", "lm5"),
-           R_squared = c(summary(lm_full)$r.squared,
+data.frame(Model=c("lm_full_train","full model without transformation",  "lm1_train","lm1", "lm2", "lm3", "lm4"),
+           R_squared = c(summary(lm_full_train)$r.squared,
+                         summary(lm_full)$r.squared,
+                         summary(lm1_train)$r.squared,
                          summary(lm1)$r.squared,
                          summary(lm2)$r.squared,
                          summary(lm3)$r.squared,
-                         summary(lm4)$r.squared,
-                         summary(lm5)$r.squared),
+                         summary(lm4)$r.squared),
            adj_R_squared = c(summary(lm_full)$adj.r.squared,
+                             summary(lm_full_train)$adj.r.squared,
                              summary(lm1)$adj.r.squared,
+                             summary(lm1_train)$adj.r.squared,
                              summary(lm2)$adj.r.squared,
                              summary(lm3)$adj.r.squared,
-                             summary(lm4)$adj.r.squared,
-                             summary(lm5)$adj.r.squared),
-           formula = c("lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)",
+                             summary(lm4)$adj.r.squared),
+           formula = c("lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df_train)",
+                       "lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)",
+                       "lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df_train)",
                        "lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)",
                        "lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score + afinn_title_score, data=df1)",
                        "lm(log(Views) ~ CC  + log(Length) + log(Subscribers) + Category, data=df1)",
-                       "lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df1)",
-                       "lm(log(Views) ~ CC + log(Length) + log(Subscribers) + Category + afinn_score, data = df_train)"
-                       ))
+                       "lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_title_score, data = df_train)"))
 ```
 
 
