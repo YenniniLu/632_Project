@@ -9,6 +9,7 @@
 library(pacman)
 p_load(tidyverse, dplyr, stringr, randomForest, vip, rpart, rpart.plot, caret, tidytext, tidyr, MASS, car)
 
+# read original data set
 df_raw <- read.csv("data.csv")
 
 # Functions for standardize variable unit 
@@ -71,9 +72,19 @@ df <- df %>% mutate(
 
 df %>% dplyr::select(URL, Channel, Views, Subscribers, Released, Length) %>% head(10)
 
+# function to compute RMSE
+RMSE <- function(y, y_hat) {
+  sqrt(mean((y - y_hat)^2))
+}
+
+
 # Save for future use
 write_csv(df, "cleaned_data.csv")
 
+df <- read_csv("cleaned_data.csv")
+df$CC <- as.factor(df$CC)
+df$Category <- as.factor(df$Category)
+df$Subscribers <- as.numeric(df$Subscribers)
 
 # Sentiment Analysis / Text mining
 df_script <- df %>% 
@@ -100,7 +111,8 @@ df_title_word <- df %>%
   ungroup()
 
 # Below codes:
-# use tf-idf to find the importance of a word in the transcript, then times it to a word's afinn score, and sum up all the words' socre to a video afinn_score.
+# use tf-idf to find the importance of a word in the transcript,
+# then times it to a word's afinn score, and sum up all the words' socre to a video afinn_score.
 
 # Transcript sentiment
 df_afinn <- df_word %>% 
@@ -140,17 +152,165 @@ df1 <- df %>%
 
 
 
+# use df1 for all the analysis 
+write_csv(df1, "cleaned_data_with_sentiment.csv")
+df1 <- read_csv("cleaned_data_with_sentiment.csv")
+
+df1$CC <- as.factor(df1$CC)
+df1$Category <- as.factor(df1$Category)
+df1$Subscribers <- as.numeric(df1$Subscribers)
+
+# Randomly split the data set in a 70% training and 30% test set. 
+# Make sure to use set.seed() so that your results are reproducible
+set.seed(652)
+n <- nrow(df1)
+train_index <- sample(1:n, round(0.7*n))
+df_train <- df1[train_index,]
+df_test <- df1[-train_index,]
+
+# visualize variables
+hist(df1$Views)
+
+table(df1$CC)
+boxplot(log(Views) ~ CC, data = df1)
+
+hist(df1$Length, xlab = "Minutes", breaks = 50)
+summary(df1$Length) 
+
+summary(df1$Released)
+hist(df1$Released, xlab = "Month Ago")
+
+summary(df1$Subscribers)
+hist(df1$Subscribers, xlab = "K Subscribers")
+
+# scatter plot matrix
+pairs(Views ~ CC + Released + Length + Subscribers + Category, data=df1)
+
+# log response and other predictors that are right skewed
+pairs(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score + afinn_title_score, data=df1)
+
+# correlation table for predictors
+round(cor(df1[, c(3,7,11,12,13)]), 2)
 
 
-# Data Discovery / Diagnostics for Linear Regression
-
-df <- read_csv("cleaned_data.csv")
-df$CC <- as.factor(df$CC)
-df$Category <- as.factor(df$Category)
-df$Subscribers <- as.numeric(df$Subscribers)
 
 
 
+# Linear Regression
+
+# full model without log transf' on training set
+lm_full_train <- lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df_train)
+summary(lm_full_train)
+
+# full model without log transf' on 100% original data set
+lm_full <- lm(Views ~ CC + Released + Length + Subscribers + Category + afinn_score+ afinn_title_score, data=df1)
+summary(lm_full)
+
+# make prediction for full model without transformer
+pred1 <- predict(lm_full_train, newdata = df_test)
+pred_full <- pred1; length(pred_full)
+
+# Compute the RMSE
+lm_full_RMSE <- RMSE(df_test$Views, pred_full); lm_full_RMSE 
+
+# MLR assumption check for lm_full model
+plot(predict(lm_full), resid(lm_full), xlab = "Fitted values", ylab = "Residuals")
+abline(h=0)
+par(mfrow=c(1,2))
+hist(resid(lm_full))
+qqnorm(resid(lm_full))
+qqline(resid(lm_full))
+
+# include all the predictors and with log transf's on training set
+lm1_train <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df_train)
+summary(lm1_train)
+
+# make prediction for full model with log transformer
+pred2 <- predict(lm1_train, newdata = df_test)
+pred2 <- exp(pred2); length(pred2)
+
+# Compute the RMSE
+lm_log_RMSE <- RMSE(df_test$Views, pred2); lm_log_RMSE
+
+# include all the predictors and with log transf's on 100% set
+lm1 <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df1)
+summary(lm1)
+
+# MLR assumption check for lm1 model
+plot(predict(lm1), resid(lm1), xlab = "Fitted values", ylab = "Residuals")
+abline(h=0)
+par(mfrow=c(1,2))
+hist(resid(lm1))
+qqnorm(resid(lm1))
+qqline(resid(lm1))
+
+# variable selection
+lm_step_train <- step(lm1_train)
+summary(lm_step_train)
+
+# MLR assumption check for lm_step model
+plot(predict(lm_step_train), resid(lm_step_train), xlab = "Fitted values", ylab = "Residuals")
+abline(h=0)
+par(mfrow=c(1,2))
+hist(resid(lm_step_train))
+qqnorm(resid(lm_step_train))
+qqline(resid(lm_step_train))
+
+
+# Regression Tree
+
+# Fit a regression tree on the training set.
+# Fit tree model
+t1 <- rpart(Views ~ CC + Released + Category + Length + Subscribers + afinn_score + afinn_title_score,
+            data = df_train,
+            method = "anova")
+summary(t1)
+
+# Plot the desicion tree
+rpart.plot(t1)
+
+# Plot R-square vs Splits and the Relative Error vs Splits.
+rsq.rpart(t1)
+
+# Make prediction
+pred_tree <- predict(t1, newdata = df_test)
+
+# Compute the RMSE
+t1_RMSE <- RMSE(df_test$Views, pred_tree); t1_RMSE
+
+# Compute R^2
+t1_R2 <- cor(df_test$Views, pred_tree)^2; t1_R2
+
+
+# Random Forest
+
+# Fit a Random Forest on the training set usinng the defaults for mtry and ntree = 500.
+# default mtry: p/3 = 28/3 = 9 (mtry: Number of predictors randomly sampled as candidates at each split.)
+
+set.seed(652)
+# Fit random forest mode using the training set
+rf1 <- randomForest(Views ~ CC + Released + Category + 
+                      Length + Subscribers + afinn_score + 
+                      afinn_title_score, importance = TRUE, 
+                    data = df_train)
+rf1
+
+# Make a variable importance plot
+vip(rf1, num_features = 14,  include_type = TRUE)
+
+plot(c(1: 500), rf1$mse, xlab="ntree", ylab="MSE", type="l")
+
+# Make prediction
+pred_rf <- predict(rf1, newdata = df_test);
+
+# Compute the RMSE
+rf1_RMSE <- RMSE(df_test$Views, pred_rf); rf1_RMSE
+
+# Compute R^2
+rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
+
+# test R^2
+rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 
 
 

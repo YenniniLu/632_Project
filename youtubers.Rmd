@@ -347,7 +347,7 @@ df1 <- df %>%
 head(df1)
 ```
 
-```{r eval=FALSE}
+```{r, eval=FALSE}
 # Save for future use
 write_csv(df1, "cleaned_data_with_sentiment.csv")
 ```
@@ -386,9 +386,8 @@ pairs(Views ~ CC + Released +
 
 From the plot above, we didn't see any obvious strong correlation between the predictors.
 
-
 ```{r}
-# log reponse and other predictors that are right skewed
+# log response and other predictors that are right skewed
 pairs(log(Views) ~ CC + log(Released) + 
         log(Length) + log(Subscribers) + Category + 
         afinn_score + afinn_title_score, 
@@ -492,14 +491,14 @@ ggplot(df1, aes(x=Category, y=Views, fill=Category)) +
   ggtitle('Views by Category') 
 ```
 
-```{r}
+```{r, eval=FALSE}
 df1 %>% 
   filter(Category == "VideoGames") %>% 
   arrange(desc(Views)) %>% 
   head(10)
 ```
 
-```{r}
+```{r, eval=FALSE}
 df1 %>% 
   arrange(desc(Views)) %>% 
   dplyr::select(Channel, Subscribers, Title, Views, Category)
