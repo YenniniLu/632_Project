@@ -12,6 +12,7 @@ p_load(tidyverse, dplyr, stringr, randomForest, vip, rpart, rpart.plot, caret, t
 # read original data set
 df_raw <- read.csv("data.csv")
 
+dim(df_raw)
 # Functions for standardize variable unit 
 # Unify units and convert string to number, like: 10K views -> 10, 10M views -> 10000
 cleanViews <- function(str) {
@@ -213,17 +214,25 @@ pred_full <- pred1; length(pred_full)
 # Compute the RMSE
 lm_full_RMSE <- RMSE(df_test$Views, pred_full); lm_full_RMSE 
 
-# MLR assumption check for lm_full model
-plot(predict(lm_full), resid(lm_full), xlab = "Fitted values", ylab = "Residuals")
+# MLR assumption check for lm_full_train model
+par(mfrow=c(1,3))
+plot(predict(lm_full_train), resid(lm_full_train), xlab = "Fitted values", ylab = "Residuals")
 abline(h=0)
-par(mfrow=c(1,2))
-hist(resid(lm_full))
-qqnorm(resid(lm_full))
-qqline(resid(lm_full))
+hist(resid(lm_full_train))
+qqnorm(resid(lm_full_train))
+qqline(resid(lm_full_train))
 
 # include all the predictors and with log transf's on training set
 lm1_train <- lm(log(Views) ~ CC + log(Released) + log(Length) + log(Subscribers) + Category + afinn_score+ afinn_title_score, data=df_train)
 summary(lm1_train)
+
+# MLR assumption check for lm1_train model
+par(mfrow=c(1,3))
+plot(predict(lm1_train), resid(lm1_train), xlab = "Fitted values", ylab = "Residuals")
+abline(h=0)
+hist(resid(lm1_train))
+qqnorm(resid(lm1_train))
+qqline(resid(lm1_train))
 
 # make prediction for full model with log transformer
 pred2 <- predict(lm1_train, newdata = df_test)
@@ -248,10 +257,9 @@ qqline(resid(lm1))
 lm_step_train <- step(lm1_train)
 summary(lm_step_train)
 
-# MLR assumption check for lm_step model
+# MLR assumption check for lm_step_train model
+par(mfrow=c(1,3))
 plot(predict(lm_step_train), resid(lm_step_train), xlab = "Fitted values", ylab = "Residuals")
-abline(h=0)
-par(mfrow=c(1,2))
 hist(resid(lm_step_train))
 qqnorm(resid(lm_step_train))
 qqline(resid(lm_step_train))
@@ -338,9 +346,9 @@ rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 rf1_R2 <- cor(df_test$Views, pred_rf)^2; rf1_R2
 
 
-# Conclusion
+# Conclusion for comparing models
 
-data.frame(Model=c("lm_full_train","full model without transformation",  "lm1_train","lm1", "lm_step_train"),
+conclusion1 <- data.frame(Model=c("lm_full_train","full model without transformation",  "lm1_train","lm1", "lm_step_train"),
            R_squared = c(summary(lm_full_train)$r.squared,
                          summary(lm_full)$r.squared,
                          summary(lm1_train)$r.squared,
@@ -359,7 +367,7 @@ data.frame(Model=c("lm_full_train","full model without transformation",  "lm1_tr
 
 
 
-data.frame(Model=c("linear regression", "regression tree", "random forest"),
+conclusion2 <- data.frame(Model=c("linear regression", "regression tree", "random forest"),
            R_squared = c(summary(lm_step_train)$r.squared,
                          cor(df_test$Views, pred_tree)^2,
                          cor(df_test$Views, pred_rf)^2),

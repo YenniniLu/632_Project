@@ -31,7 +31,7 @@ The dataset contains **2515 unique videos** and their **subtitles** from over **
 
 ```{r}
 df_raw <- read.csv("data.csv")
-head(df_raw)
+dim(df_raw)
 ```
 
 ![](assets/video.png)
@@ -514,7 +514,9 @@ abline(h=0)
 ```
 
 ```{r}
-par(mfrow=c(1,2))
+par(mfrow=c(1,3))
+plot(predict(lm1), resid(lm1), xlab = "Fitted values", ylab = "Residuals")
+abline(h=0)
 hist(resid(lm1))
 qqnorm(resid(lm1))
 qqline(resid(lm1))
