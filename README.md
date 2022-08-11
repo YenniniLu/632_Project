@@ -1,4 +1,4 @@
-# 632_Project Description
+# YouTube Videos View Prediction Modeling Project
 
 ## Data Sets
 data from: "YouTubers saying things" by PRANESH MUKHOPADHYAY 
