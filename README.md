@@ -1,5 +1,9 @@
 # YouTube Videos View Prediction Modeling Project
 
+## Reserach Goal
+
+Find the best model to predict the number of Views using sub-set of predictors: Subscribers, CC, Released, Category, Sentiment and Length.
+
 ## Data Sets
 data from: "YouTubers saying things" by PRANESH MUKHOPADHYAY 
 
@@ -40,9 +44,7 @@ This dataset contains subtitles from over `91` different YouTubers, ranging from
 |`News`|**A&E**, **BBC News**, **Insider News**, **NBC News**, **NowThis News**, **Sky News**, **SomeGoodNews**, **TechLinked**, **The Daily Show with Trevor Noah**, **VICE**|10|
 |`Tech`|**Austin Evans**, **Coder Coder**, **Fireship**, **Hardware Canucks**, **Joma Tech**, **Linus Tech Tips**, **Marques Brownlee**, **TechLinked**, **Techquickie**, **Web Dev Simplified**|10|
 
-## Reserach Goal
 
-Find the best model to predict the number of Views using predictors: Subscribers, CC, Released, Category, Sentiment and Length.
 
 ## Tasks
 
