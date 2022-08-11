@@ -42,7 +42,7 @@ This dataset contains subtitles from over `91` different YouTubers, ranging from
 
 ## Reserach Goal
 
-Find the best model to predict the number of views using Subscribers, CC, Released, Category, Sentiment and Length.
+Find the best model to predict the number of Views using predictors: Subscribers, CC, Released, Category, Sentiment and Length.
 
 ## Tasks
 
